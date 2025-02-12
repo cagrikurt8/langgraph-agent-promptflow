@@ -1,0 +1,29 @@
+$schema: https://azuremlschemas.azureedge.net/promptflow/latest/Flow.schema.json
+environment:
+  python_requirements_txt: requirements.txt
+inputs:
+  chat_history:
+    type: list
+    is_chat_history: true
+    default: []
+  question:
+    type: string
+    is_chat_input: true
+  user_id:
+    type: string
+    default: ""
+outputs:
+  answer:
+    type: string
+    reference: ${answer_with_agent.output}
+    is_chat_output: true
+nodes:
+- name: answer_with_agent
+  type: python
+  source:
+    type: code
+    path: answer_with_agent.py
+  inputs:
+    oai_conn: aoai-ckurt
+    question: ${inputs.question}
+    user_id: ${inputs.user_id}

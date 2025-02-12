@@ -1,0 +1,43 @@
+{
+  "package": {},
+  "code": {
+    "chat.jinja2": {
+      "type": "llm",
+      "inputs": {
+        "question": {
+          "type": [
+            "string"
+          ]
+        },
+        "chat_history": {
+          "type": [
+            "string"
+          ]
+        }
+      },
+      "description": "Chat with Chatbot"
+    },
+    "answer_with_agent.py": {
+      "type": "python",
+      "inputs": {
+        "question": {
+          "type": [
+            "string"
+          ]
+        },
+        "user_id": {
+          "type": [
+            "string"
+          ]
+        },
+        "oai_conn": {
+          "type": [
+            "CustomConnection"
+          ]
+        }
+      },
+      "source": "answer_with_agent.py",
+      "function": "answer_with_agent"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+$schema: https://azuremlschemas.azureedge.net/latest/environment.schema.json
+#enter name for your environment
+name: langgraph-agent-env
+#image to be used
+#image: mcr.microsoft.com/azureml/promptflow/promptflow-runtime-stable:latest
+#conda file to customize image
+build:
+    path: ../environment/
+    dockerfile_path: Dockerfile
+#conda_file: ./packages.yml
+inference_config:
+    liveness_route:
+      path: /health
+      port: 8080
+    readiness_route:
+      path: /health
+      port: 8080
+    scoring_route:
+      path: /score
+      port: 8080
