@@ -32,7 +32,7 @@ class LangGraphAssistant:
         azure_openai_key = oai_conn.secrets.get('azure_openai_key')
         api_version = oai_conn.configs.get('api_version')
         deployment_name = oai_conn.configs.get('deployment_name')
-        postgres_db_uri = oai_conn.secrets.get('postgres_db_uri')
+        self.postgres_db_uri = oai_conn.secrets.get('postgres_db_uri')
 
         self.thread_id = thread_id
         self.user_id = user_id
@@ -44,8 +44,8 @@ class LangGraphAssistant:
             "autocommit": True,
             "prepare_threshold": 0,
         }
-        self.conn = Connection.connect(postgres_db_uri, **self.connection_kwargs)
-        self.postgres_saver = PostgresSaver(self.conn)
+        #self.conn = Connection.connect(postgres_db_uri, **self.connection_kwargs)
+        #self.postgres_saver = PostgresSaver(self.conn)
         # NOTE: you need to call .setup() the first time you're using your checkpointer
         # self.postgres_saver.setup()
         self.llm = AzureChatOpenAI(azure_endpoint=azure_openai_endpoint, api_key=azure_openai_key, azure_deployment=deployment_name, api_version=api_version, temperature=0)
@@ -54,12 +54,12 @@ class LangGraphAssistant:
         self.tools_by_name = {"add": add, "multiply": multiply, "divide": divide, "web_search": web_search, "get_all_meetings": get_all_meetings, "get_meeting_transcript_contents": get_meeting_transcript_contents}
         self.tools = [add, multiply, divide, web_search, get_all_meetings, get_meeting_transcript_contents]
         self.llm_with_tools = self.llm.bind_tools(self.tools)
-        self.sys_msg = open("system_message.txt", "r").read() + f" Today is {datetime.now().strftime('%Y-%m-%d')}, in case you need the date to complete your tasks. The user ID of the user is {user_id}, you can use it in your tools."
+        self.sys_msg = f"You are a helpful assistant tasked with performing arithmetic on a set of inputs. Today is {datetime.now().strftime('%Y-%m-%d')}, in case you need the date to complete your tasks. The user ID of the user is {user_id}, you can use it in your tools."
         self.thread_id = {"configurable": {"thread_id": self.thread_id, "user_id": self.user_id}}
-        self.graph = self.build_graph()
+        #self.graph = self.build_graph()
 
 
-    def build_graph(self):
+    def build_graph(self, checkpointer: PostgresSaver = None):
         # Graph
         builder = StateGraph(State)
         
@@ -84,7 +84,8 @@ class LangGraphAssistant:
         
         #graph = builder.compile(checkpointer=self.mongodb_saver)
         #graph = builder.compile(checkpointer=self.memory_saver)
-        graph = builder.compile(checkpointer=self.postgres_saver)
+        #graph = builder.compile(checkpointer=self.postgres_saver)
+        graph = builder.compile(checkpointer=checkpointer)
 
         return graph
 
@@ -229,7 +230,10 @@ class LangGraphAssistant:
     def get_answer(self, question):
         input_message = HumanMessage(content=question)
 
-        return self.graph.invoke({"messages": [input_message]}, self.thread_id)
+        with Connection.connect(self.postgres_db_uri, self.connection_kwargs) as conn:
+            checkpointer = PostgresSaver(conn)
+            graph = self.build_graph(checkpointer)
+            return graph.invoke({"messages": [input_message]}, self.thread_id)
     
     
     def get_agent_state(self):
