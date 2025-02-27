@@ -230,7 +230,7 @@ class LangGraphAssistant:
     def get_answer(self, question):
         input_message = HumanMessage(content=question)
 
-        with Connection.connect(self.postgres_db_uri, self.connection_kwargs) as conn:
+        with Connection.connect(self.postgres_db_uri, **self.connection_kwargs) as conn:
             checkpointer = PostgresSaver(conn)
             graph = self.build_graph(checkpointer)
             return graph.invoke({"messages": [input_message]}, self.thread_id)
